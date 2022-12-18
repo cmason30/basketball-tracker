@@ -34,15 +34,12 @@ def run_inference(url):
 
 
 
-def visualize_output(output, image):
-    output = non_max_suppression_kpt(output,
-                                     0.25, # Confidence Threshold
-                                     0.65, # IoU Threshold
-                                     nc=model.yaml['nc'], # Number of Classes
-                                     nkpt=model.yaml['nkpt'], # Number of Keypoints
-                                     kpt_label=True)
+def visualize_output(output, image, ci, iou):
+    output = non_max_suppression_kpt(output,ci,iou,nc=model.yaml['nc'],nkpt=model.yaml['nkpt'],kpt_label=True)
+
     with torch.no_grad():
         output = output_to_keypoint(output)
+
     nimg = image[0].permute(1, 2, 0) * 255
     nimg = nimg.cpu().numpy().astype(np.uint8)
     nimg = cv2.cvtColor(nimg, cv2.COLOR_RGB2BGR)
@@ -59,5 +56,5 @@ if __name__ == "__main__":
     model = load_model()
 
     output, image = run_inference(r'/Users/colinmason/Desktop/python-projects/basketball-tracker/data/cuts/out1.png')
-    visualize_output(output, image)
+    visualize_output(output, image, 0.25, 0.65)
 
