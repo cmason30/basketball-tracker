@@ -11,6 +11,7 @@ import matplotlib.pyplot as plt
 
 
 def load_model():
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
     model = torch.load('/Users/colinmason/Desktop/python-projects/basketball-tracker/yolov7-w6-pose.pt', map_location=device)['model']
 
@@ -22,7 +23,7 @@ def load_model():
 
 
 
-def run_inference(url):
+def run_inference(model, url):
     image = cv2.imread(url)
 
     image = letterbox(image, 960, stride=64, auto=True)[0]
@@ -34,27 +35,29 @@ def run_inference(url):
 
 
 
-def visualize_output(output, image, ci, iou):
+def overlay_img(model, output, image, ci, iou):
     output = non_max_suppression_kpt(output,ci,iou,nc=model.yaml['nc'],nkpt=model.yaml['nkpt'],kpt_label=True)
 
     with torch.no_grad():
         output = output_to_keypoint(output)
 
-    nimg = image[0].permute(1, 2, 0) * 255
-    nimg = nimg.cpu().numpy().astype(np.uint8)
-    nimg = cv2.cvtColor(nimg, cv2.COLOR_RGB2BGR)
+    nout_img = image[0].permute(1, 2, 0) * 255
+    nout_img = nout_img.numpy().astype(np.uint8)
+    nout_img = cv2.cvtColor(nout_img, cv2.COLOR_RGB2BGR)
     for idx in range(output.shape[0]):
-        plot_skeleton_kpts(nimg, output[idx, 7:].T, 3)
-    plt.figure(figsize=(12, 12))
-    plt.axis('off')
+        plot_skeleton_kpts(nout_img, output[idx, 7:].T, 3) # draws the skeleton on image
 
-    cv2.imshow('img', nimg)
-    cv2.waitKey(0)
+    nout_img = cv2.cvtColor(nout_img, cv2.COLOR_BGR2RGB)
+    # cv2.imshow('img', nout_img)
+    # cv2.waitKey(0)
+    #cv2.imwrite("test1.png", nout_img)
+
+    return nout_img
 
 
 if __name__ == "__main__":
     model = load_model()
 
-    output, image = run_inference(r'/Users/colinmason/Desktop/python-projects/basketball-tracker/data/cuts/out1.png')
-    visualize_output(output, image, 0.25, 0.65)
+    output, image = run_inference(model, r'/Users/colinmason/Desktop/python-projects/basketball-tracker/data/cuts/frames/out1.png')
+    overlay_img(model, output, image, 0.25, 0.65)
 
